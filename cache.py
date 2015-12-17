@@ -4,7 +4,7 @@ import urllib2
 import json
 
 
-CACHE_FILE = "cache.html"
+CACHE_FILE = "cache2.html"
 URL_LONG_IDEAS = "http://seekingalpha.com/analysis/investing-ideas/long-ideas/%s"
 
 class Cache(object):
