@@ -11,7 +11,8 @@ from bs4 import BeautifulSoup
 
 CACHE_FILE = "data.json"
 URL_LONG_IDEAS = "http://seekingalpha.com/analysis/investing-ideas/long-ideas/%s"
-DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+URL_SHORT_IDEAS = "http://seekingalpha.com/analysis/investing-ideas/short-ideas/%s"
+DATE_FORMAT = "%Y-%m-%d"
 
 
 def _json_load(obj):
@@ -28,12 +29,12 @@ def _json_dump(data):
 		data[key] = (data[key][0], data[key][1].strftime(DATE_FORMAT))
 	return json.dumps(data, sort_keys=True, indent=2, separators=(',', ': '))
 
-def _parse(html_doc):
+def _parse(raw, data={}):
+	html_doc = raw['html']
+	now = raw['last_ts']
 	soup = BeautifulSoup(html_doc, 'html.parser')
 
 	articles = soup.find_all('li')
-
-	data = {}
 
 	for article in articles:
 		article_id = article['article_id']
@@ -53,14 +54,17 @@ def _parse(html_doc):
 		if 'Today' in pub_date or 'Yesterday' in pub_date:
 			cal = parsedatetime.Calendar()
 			time_struct, parse_status = cal.parse(pub_date)
-			pub_date = datetime.datetime.fromtimestamp(mktime(time_struct))
+			pub_date = datetime.datetime.fromtimestamp(mktime(time_struct)).date()
 		else:
-			pub_date = dateutil.parser.parse(pub_date)
+			pub_date = dateutil.parser.parse(pub_date).date()
 
 		print "%s: %s - %s" % (article_id, ticker, pub_date)
-		data[article_id] = (ticker, pub_date)
+		if pub_date not in data:
+			data[pub_date] = [ticker]
+		elif ticker not in data[pub_date]:
+			data[pub_date] += [ticker]
 
-	return data
+	return now, data
 
 def _write(data):
 	orig_data = _read()
@@ -79,37 +83,35 @@ def _read():
 	f.close()
 	return data
 	
-def update():
+def pull(date = None):
 	user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
 	headers = { 'User-Agent' : user_agent }
 
-	data = _read()
-	if data:
-		now = None
-		for key in data:
-			if not now: now = data[key][1]
-			if data[key][1] < now: now = data[key][1]
+	if date:
+		now = date
 	else:
 		now = datetime.datetime.now()
+
+	start = now.date()
+
+	now += datetime.timedelta(days=1)
 	now = time.mktime(now.timetuple())
-	now = "%0.d" % now
 
-	while True:
+	data = {}
 
-		print "Capturing Date: %s" % time.strftime(DATE_FORMAT, time.localtime(float(now)))
+	while len(data) <= 1:
 		
-		url = URL_LONG_IDEAS % now
+		url = URL_LONG_IDEAS % "%0.d" % now
 	
 		req = urllib2.Request(url, headers=headers)
 		response = urllib2.urlopen(req)
 		the_page = response.read()
 
-		data = json.loads(the_page)
+		raw = json.loads(the_page)
+		now, data = _parse(raw, data)
 
-		now = data['last_ts']
-		html_doc = data['html']
-		data = _parse(html_doc)
-		_write(data)
+	return data[start]
 
-def get():
-	return _read()
+def get(date):
+	return pull(date)
+	#return _read()
