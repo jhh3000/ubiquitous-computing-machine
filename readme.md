@@ -12,8 +12,8 @@ To calculate the efficacy of this decision system, 25 dates from the window betw
 
 Index Funds: SPY, DIA, QQQ
 
-Method 1 (method1.txt): 
-Method 2 (method2.txt): 
-Method 3 (method3.txt): 
+Method 1 (method1.txt): 0.033972759227
+Method 2 (method2.txt): 0.179523344279
+Method 3 (method3.txt): -0.05411531743
 
-In conclusion, none of these methods yields a great stock prediction system.
+In conclusion, the signal does seem to generally outperform the market, but the best method of holding the stock is simply to hold it for an entire year.
