@@ -91,6 +91,8 @@ else:
 		print "The UCM identified %s stocks to backtest." % len(stocks)
 		print "\n".join(stocks)
 
+		if len(stocks) == 0: continue
+
 		start_date = date - dateutil.relativedelta.relativedelta(years=1)
 		end_date = date
 		start = start_date.strftime(YAHOO_DATE_FORMAT)
