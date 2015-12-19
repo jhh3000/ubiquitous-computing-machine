@@ -1,5 +1,5 @@
 import seeking_alpha
-from yahoo import moving_avg, buy_and_hold
+from yahoo import moving_avg, buy_and_hold, trailing_stop
 from utils import randomDate
 
 import dateutil.parser
@@ -9,104 +9,67 @@ import datetime
 DATE_FORMAT = "%b. %d, %Y"
 YAHOO_DATE_FORMAT = "%Y-%m-%d"
 INDEX_ETFS = ('SPY', 'DIA', 'QQQ')
+ITERATIONS = 10
 
-print "Welcome to the Ubiquitous Computing Machine (UCM)."
+print "Welcome to the Ubiquitous Computing Machine (UCM), an automated decision system for stock picking."
 print ""
-print "This platform will decide which stocks you will invest in today."
+print "This automated decision system recommends stocks to invest in on a given date based on only one signal:"
+print "1) The stock has to appear on that date on the 'Investing Ideas - Long Ideas' list on seekingalpha.com"
 print ""
-print "The criteria is as follows:"
-print "- You must hold the stock for one year, using either the 50-day MA or buy-and-hold method"
-print "- The UCM determines stocks you invest in by checking for ideas on seekingalpha.com"
-print "- The UCM then performs a backtest to get the historical 1-yr return with the chosen method"
-print "- The UCM then compares that to the backtest of 3 index ETFs for the S&P, Dow, and Nasdaq"
-print "- A stock is a recommended buy if it beats all three indexes"
-
+print "Then, the UCM will invest your money based on a number of methods:"
+print "1) 50 day moving average (same as hw2)"
+print "2) Buy and hold for the entire year"
+print "3) Trailing stop (15%)"
+print "4) TODO: Trailing stop (15%) with re-entry if the price drops below initial price"
 print ""
 print "Please enter the method you'd like to use:"
 print "1) for 50-Day Moving Average"
 print "2) for buy-and-hold"
+print "3) for trailing stop of 15%"
 method = raw_input("Method: ")
 if method == "1":
 	method = moving_avg
 elif method == "2":
 	method = buy_and_hold
+elif method == "3":
+	method = trailing_stop
 else:
-	print "You must select either 1 or 2"
+	print "You must select either 1, 2, or 3"
 	exit()
 
 print ""
-print "Please enter 'validate' if you'd like to see how the stocks that UCM picks"
+print "Please enter 'backtest' if you'd like to see how the stocks that UCM picks"
 print "performs over the course of the next year. If you select this option, UCM"
-print "will randomly select 10 dates between 1 year ago and 2 years ago to run the prediction"
-print "alorithm on, and then backtest it for the next year to see what the actual performance"
-print "would have been."
-validate = raw_input("Validate: ")
+print "will randomly select %s dates between 1 year ago and 2 years ago to invest," % ITERATIONS
+print "and then backtest those stocks for the next year to see what the actual performance"
+print "would have been for your chosen method. Leave this blank to see yesterday's recommendations."
+backtest = raw_input("Backtest: ")
 
-if not validate:
-	print ""
-	print "Please enter a date you'd like to test stocks from,"
-	print "or leave it blank for yesterday."
-	print ""
-	date = raw_input("Date: ")
-
-	date = dateutil.parser.parse(date) if date else datetime.datetime.now() - datetime.timedelta(days=1)
-	if date >= datetime.datetime.now() - datetime.timedelta(days=1):
-		print "You have to choose a date yesterday or before."
-		exit()
+if not backtest:
+	date = datetime.datetime.now() - datetime.timedelta(days=1)
 
 	print ""
-	print "You chose to test stocks from: %s" % date.strftime(DATE_FORMAT)
+	print "You chose to see yesterday's recommendations, date: %s" % date.strftime(DATE_FORMAT)
 	print ""
 	print "Searching for investing ideas on Seeking Alpha..."
 
 	stocks = seeking_alpha.get(date)
-	start_date = date - dateutil.relativedelta.relativedelta(years=1)
-	end_date = date
-	start = start_date.strftime(YAHOO_DATE_FORMAT)
-	end = end_date.strftime(YAHOO_DATE_FORMAT)
 
 	print ""
-	print "The UCM identified %s stocks to backtest." % len(stocks)
-	print ""
-	print "Benchmarking the index funds' performance now..."
-
-	max_return = -1
-	for ticker in INDEX_ETFS:
-		result = method(ticker=ticker, start=start, end=end)
-		print "INDEX %s: %s return" % (ticker, result)
-		if max_return < result: max_return = result
-
-	print ""
-	print "The benchmark to beat is: %s" % max_return
-
-	print ""
-	print "Performing backtest between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
-
-	selected = []
-	for ticker in stocks:
-		result = method(ticker=ticker, start=start, end=end)
-		if result > max_return:
-			print "SELECTED Ticker %s: %s return" % (ticker, result)
-			selected += [ticker]
-		else:
-			print "Ticker %s: %s return" % (ticker, result)
-
-	print ""
-	print "The UCM selected %s stocks:" % len(selected)
-	print "\n".join(selected)
+	print "The UCM identified %s stocks to invest in today." % len(stocks)
 
 	exit()
 
 else:
 	print ""
-	print "You have chosen to validate stocks that UCM picks. The scoring system will be as follows:"
-	print "- +1 point for every index that the stock outperforms"
+	print "You have chosen to backtest stocks that UCM picks. We'll compare the average return of each"
+	print "portfolio and subtract from that the average return of the index to identify how much you beat"
+	print "the market by with the given method and signal over the course of a year"
 	print ""
 	print "++++++++++++++++++++++++++++++%s++++++++++++++++++++++++++++++" % method.__name__
 
-	total_score = 0
-	possible_score = 0
-	for n in range(0, 10):
+	backtest_avg = []
+	for n in range(0, ITERATIONS):
 		print ""
 		print "++++++++++++++++++++++++++++++ITERATION %s++++++++++++++++++++++++++++++" % n
 
@@ -119,70 +82,48 @@ else:
 		print "Searching for investing ideas on Seeking Alpha..."
 
 		stocks = seeking_alpha.get(date)
+		
+		print "The UCM identified %s stocks to backtest." % len(stocks)
+
 		start_date = date - dateutil.relativedelta.relativedelta(years=1)
 		end_date = date
 		start = start_date.strftime(YAHOO_DATE_FORMAT)
 		end = end_date.strftime(YAHOO_DATE_FORMAT)
 
-		print "The UCM identified %s stocks to backtest." % len(stocks)
-		print "Performing index backtest benchmark between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
+		print "Performing index benchmark between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
 
-		max_return = -1
+		benchmark_avg = []
 		for ticker in INDEX_ETFS:
 			result = method(ticker=ticker, start=start, end=end)
 			print "INDEX %s: %s return" % (ticker, result)
-			if max_return < result: max_return = result
+			if result: benchmark_avg += [result]
+		benchmark_avg = sum(benchmark_avg) / len(benchmark_avg)
 
-		print "The benchmark to beat is: %s" % max_return
-		print "Performing backtest between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
+		print "The benchmark to beat is: %s" % benchmark_avg
+		print "Performing portflio backtest between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
 
-		selected = []
+		actual_avg = []
 		for ticker in stocks:
 			result = method(ticker=ticker, start=start, end=end)
-			if result > max_return:
-				print "SELECTED Ticker %s: %s return" % (ticker, result)
-				selected += [ticker]
+			if result > benchmark_avg:
+				print "BEAT Ticker %s: %s return" % (ticker, result)
+			elif result:
+				print "MISSED Ticker %s: %s return" % (ticker, result)
 			else:
-				print "Ticker %s: %s return" % (ticker, result)
+				print "ERROR Ticker %s, NOT ENOUGH DATA TO BACKTEST" % ticker
+			if result: actual_avg += [result]
+		actual_avg = sum(actual_avg) / len(actual_avg)
 
-		print "The UCM selected %s stocks:" % len(selected)
-		print "\n".join(selected)
+		diff = actual_avg - benchmark_avg
 
-		date = date + dateutil.relativedelta.relativedelta(years=1)
-		start_date = date - dateutil.relativedelta.relativedelta(years=1)
-		end_date = date
-		start = start_date.strftime(YAHOO_DATE_FORMAT)
-		end = end_date.strftime(YAHOO_DATE_FORMAT)
+		print "Final Average Diff to Index: %s" % diff
 
-		print "Performing validation index backtest benchmark between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
-
-		max_return = {}
-		for ticker in INDEX_ETFS:
-			result = method(ticker=ticker, start=start, end=end)
-			print "INDEX %s: %s return" % (ticker, result)
-			max_return[ticker] = result
-
-		print "The benchmarks to beat are: %s" % max_return
-		print "Performing validation backtest between %s and %s..." % (start_date.strftime(DATE_FORMAT), end_date.strftime(DATE_FORMAT))
-
-		score = 0
-		possible = 0
-		for ticker in selected:
-			result = method(ticker=ticker, start=start, end=end)
-			for index in max_return:
-				possible += 1
-				if result > max_return[index]:
-					print "BEAT %s Ticker %s: %s return" % (index, ticker, result)
-					score += 1
-				else:
-					print "MISSED %s Ticker %s: %s return" % (index, ticker, result)
-
-		print "Final Score: %s / %s" % (score, possible)
-
-		total_score += score
-		possible_score += possible
+		backtest_avg += [diff]
 
 	print ""
 	print "++++++++++++++++++++++++++++++COMPLETE++++++++++++++++++++++++++++++"
+	
+	backtest_avg = sum(backtest_avg) / len(backtest_avg)
+
 	print ""
-	print "Final Validation Score: %s / %s" % (total_score, possible_score)
+	print "Final Backtest Average: %s" % backtest_avg
