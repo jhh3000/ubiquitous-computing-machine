@@ -1,13 +1,17 @@
-from yahoo_finance import Share
+from yahoo_finance import Share, YQLQueryError
 from operator import itemgetter
 
 def moving_avg(ticker, start, end, duration = 50):
     ticker = Share(ticker)
 
-    try:
-        historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
-    except ValueError as e:
-        raise e
+    while True:
+        try:
+            historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
+        except ValueError as e:
+            raise e
+        except YQLQueryError as e:
+            continue
+        break
 
     moving_sum = []
     holding = None
@@ -40,10 +44,14 @@ def moving_avg(ticker, start, end, duration = 50):
 def buy_and_hold(ticker, start, end):
     ticker = Share(ticker)
 
-    try:
-        historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
-    except ValueError as e:
-        raise e
+    while True:
+        try:
+            historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
+        except ValueError as e:
+            raise e
+        except YQLQueryError as e:
+            continue
+        break
 
     if len(historical) <= 1:
         return None
@@ -57,10 +65,14 @@ def buy_and_hold(ticker, start, end):
 def trailing_stop(ticker, start, end, percentage = 0.15):
     ticker = Share(ticker)
 
-    try:
-        historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
-    except ValueError as e:
-        raise e
+    while True:
+        try:
+            historical = sorted(ticker.get_historical(start, end), key=itemgetter("Date"))
+        except ValueError as e:
+            raise e
+        except YQLQueryError as e:
+            continue
+        break
 
     if len(historical) <= 1:
         return None

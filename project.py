@@ -12,7 +12,7 @@ YAHOO_DATE_FORMAT = "%Y-%m-%d"
 DEFAULT_METHOD = buy_and_hold
 INDEX_ETFS = ('SPY', 'DIA', 'QQQ')
 SIGNAL_DAYS = 3
-ITERATIONS = 100
+ITERATIONS = 25
 
 
 print "Welcome to the Ubiquitous Computing Machine (UCM), an automated decision system for stock picking."
@@ -25,7 +25,6 @@ print "Then, the UCM will invest your money based on a number of methods:"
 print "1) 50 day moving average (same as hw2)"
 print "2) Buy and hold for the entire year"
 print "3) Trailing stop (15%)"
-print "4) TODO: Trailing stop (15%) with re-entry if the price drops below initial price"
 print ""
 print "Please enter the method you'd like to use:"
 print "1) for 50-Day Moving Average"
