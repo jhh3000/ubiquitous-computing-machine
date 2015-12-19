@@ -83,35 +83,42 @@ def _read():
 	f.close()
 	return data
 	
-def pull(date = None):
+def _pull(start_date, num_days = 0):
 	user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
 	headers = { 'User-Agent' : user_agent }
 
-	if date:
-		now = date
-	else:
-		now = datetime.datetime.now()
-
-	start = now.date()
-
-	now += datetime.timedelta(days=1)
-	now = time.mktime(now.timetuple())
+	timestamp = start_date + datetime.timedelta(days=1)
+	timestamp = time.mktime(timestamp.timetuple())
 
 	data = {}
 
-	while len(data) <= 2:
+	while len(data) <= num_days + 2:
 		
-		url = URL_LONG_IDEAS % "%0.d" % now
+		url = URL_LONG_IDEAS % "%0.d" % timestamp
 	
 		req = urllib2.Request(url, headers=headers)
 		response = urllib2.urlopen(req)
 		the_page = response.read()
 
 		raw = json.loads(the_page)
-		now, data = _parse(raw, data)
+		timestamp, data = _parse(raw, data)
 
-	return data[start]
+	output = []
+	for n in range(0, num_days+1):
+		output += data[(start_date - datetime.timedelta(days=n)).date()]
 
-def get(date):
-	return pull(date)
+	return output
+
+def get(date, signal_days):
+	print "Phase 1, searching for tickers in today's list"
+	today_tickers = _pull(date)
+	print "Phase 2, searching for tickers appearing in lists %s days ago" % signal_days
+	signal_tickers = _pull(date - datetime.timedelta(days=1), signal_days)
+	print today_tickers
+	print signal_tickers
+	output = []
+	for ticker in today_tickers:
+		if ticker in signal_tickers:
+			output += [ticker]
+	return output
 	#return _read()

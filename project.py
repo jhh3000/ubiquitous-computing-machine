@@ -6,15 +6,20 @@ import dateutil.parser
 import dateutil.relativedelta
 import datetime
 
+
 DATE_FORMAT = "%b. %d, %Y"
 YAHOO_DATE_FORMAT = "%Y-%m-%d"
+DEFAULT_METHOD = buy_and_hold
 INDEX_ETFS = ('SPY', 'DIA', 'QQQ')
-ITERATIONS = 10
+SIGNAL_DAYS = 3
+ITERATIONS = 100
+
 
 print "Welcome to the Ubiquitous Computing Machine (UCM), an automated decision system for stock picking."
 print ""
 print "This automated decision system recommends stocks to invest in on a given date based on only one signal:"
 print "1) The stock has to appear on that date on the 'Investing Ideas - Long Ideas' list on seekingalpha.com"
+print "2) The stock has to have appeared within %s days on the same list" % SIGNAL_DAYS
 print ""
 print "Then, the UCM will invest your money based on a number of methods:"
 print "1) 50 day moving average (same as hw2)"
@@ -34,8 +39,7 @@ elif method == "2":
 elif method == "3":
 	method = trailing_stop
 else:
-	print "You must select either 1, 2, or 3"
-	exit()
+	method = DEFAULT_METHOD
 
 print ""
 print "Please enter 'backtest' if you'd like to see how the stocks that UCM picks"
@@ -53,7 +57,7 @@ if not backtest:
 	print ""
 	print "Searching for investing ideas on Seeking Alpha..."
 
-	stocks = seeking_alpha.get(date)
+	stocks = seeking_alpha.get(date, SIGNAL_DAYS)
 
 	print ""
 	print "The UCM identified %s stocks to invest in today." % len(stocks)
@@ -82,7 +86,7 @@ else:
 		print "Selecting Stocks from Date: %s" % date.strftime(DATE_FORMAT)
 		print "Searching for investing ideas on Seeking Alpha..."
 
-		stocks = seeking_alpha.get(date)
+		stocks = seeking_alpha.get(date, SIGNAL_DAYS)
 		
 		print "The UCM identified %s stocks to backtest." % len(stocks)
 		print "\n".join(stocks)
