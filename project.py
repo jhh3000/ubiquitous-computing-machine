@@ -57,6 +57,7 @@ if not backtest:
 
 	print ""
 	print "The UCM identified %s stocks to invest in today." % len(stocks)
+	print "\n".join(stocks)
 
 	exit()
 
@@ -84,6 +85,7 @@ else:
 		stocks = seeking_alpha.get(date)
 		
 		print "The UCM identified %s stocks to backtest." % len(stocks)
+		print "\n".join(stocks)
 
 		start_date = date - dateutil.relativedelta.relativedelta(years=1)
 		end_date = date

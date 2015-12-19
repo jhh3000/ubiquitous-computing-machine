@@ -99,7 +99,7 @@ def pull(date = None):
 
 	data = {}
 
-	while len(data) <= 1:
+	while len(data) <= 2:
 		
 		url = URL_LONG_IDEAS % "%0.d" % now
 	
